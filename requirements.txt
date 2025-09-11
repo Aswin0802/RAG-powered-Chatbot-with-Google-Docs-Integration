@@ -1,0 +1,31 @@
+# Web framework
+flask
+gunicorn
+python-dotenv
+requests
+
+# Google API
+google-auth
+google-auth-oauthlib
+google-api-python-client
+
+# LLM and RAG
+openai
+langchain
+langchain-community
+langchain-openai
+langchain-huggingface   # Updated package for HuggingFaceEndpointEmbeddings
+
+# Vector store
+faiss-cpu
+
+# Optional: if you want async inference or extra HF utilities
+huggingface-hub
+
+
+
+google-auth-httplib2
+
+tiktoken
+
+urllib3

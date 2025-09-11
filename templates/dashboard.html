@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG Chatbot Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            min-height: 100vh;
+            color: #1e293b;
+        }
+
+        .header {
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 16px 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .logo::after {
+            content: '🤖';
+        }
+
+        .app-title {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logout-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: #dc2626;
+            transform: translateY(-1px);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 32px 24px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            height: fit-content;
+        }
+
+        .panel h2 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #1e293b;
+        }
+
+        .panel-subtitle {
+            color: #64748b;
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+
+        .docs-section {
+            margin-bottom: 24px;
+        }
+
+        .docs-container {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            background: #f8fafc;
+        }
+
+        .docs-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .docs-container::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+
+        .docs-container::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        .doc-item {
+            padding: 12px 16px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .doc-item:hover {
+            background: #e2e8f0;
+        }
+
+        .doc-item:last-child {
+            border-bottom: none;
+        }
+
+        .doc-item.selected {
+            background: #ddd6fe;
+            color: #5b21b6;
+        }
+
+        .doc-checkbox {
+            width: 18px;
+            height: 18px;
+            border: 2px solid #cbd5e1;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .doc-checkbox.checked {
+            background: #667eea;
+            border-color: #667eea;
+            color: white;
+        }
+
+        .doc-checkbox.checked::after {
+            content: '✓';
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .doc-name {
+            flex: 1;
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .selected-count {
+            background: #667eea;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .load-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 16px;
+        }
+
+        .load-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+        }
+
+        .load-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .status-message {
+            margin-top: 16px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .status-message.success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+
+        .status-message.loading {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #bfdbfe;
+        }
+
+        .status-message.error {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        .chat-section {
+            display: none;
+        }
+
+        .chat-section.show {
+            display: block;
+        }
+
+        .loaded-docs {
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
+        }
+
+        .loaded-docs h4 {
+            color: #0c4a6e;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .loaded-docs ul {
+            list-style: none;
+            margin: 0;
+        }
+
+        .loaded-docs li {
+            color: #075985;
+            font-size: 13px;
+            padding: 2px 0;
+        }
+
+        .loaded-docs li::before {
+            content: '📄 ';
+            margin-right: 4px;
+        }
+
+        .query-textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 16px;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+
+        .query-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .ask-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 16px;
+        }
+
+        .ask-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .ask-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .response-area {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+            white-space: pre-wrap;
+            line-height: 1.6;
+            min-height: 60px;
+        }
+
+        .loading-spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #e2e8f0;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                gap: 24px;
+                padding: 20px;
+            }
+
+            .header-content {
+                padding: 0 20px;
+            }
+
+            .panel {
+                padding: 24px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="logo-section">
+                <div class="logo"></div>
+                <h1 class="app-title">RAG Chatbot</h1>
+            </div>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Documents Panel -->
+        <div class="panel">
+            <h2>Your Google Docs</h2>
+            <p class="panel-subtitle">Select one or more documents to add to your knowledge base</p>
+            
+            <div class="docs-section">
+                <div class="docs-container" id="docsContainer">
+                    <div style="padding: 20px; text-align: center; color: #64748b;">
+                        <div class="loading-spinner" style="display: inline-block; margin-bottom: 12px;"></div>
+                        <div>Loading your documents...</div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="load-btn" id="loadBtn" onclick="loadSelectedDocs()" disabled>
+                Load Selected Documents (<span id="selectedCount">0</span>)
+            </button>
+
+            <div id="statusMessage"></div>
+        </div>
+
+        <!-- Chat Panel -->
+        <div class="panel">
+            <h2>AI Assistant</h2>
+            <p class="panel-subtitle">Ask questions about your selected documents</p>
+
+            <div class="chat-section" id="chatSection">
+                <div class="loaded-docs" id="loadedDocs" style="display: none;">
+                    <h4>Loaded Documents:</h4>
+                    <ul id="loadedDocsList"></ul>
+                </div>
+
+                <textarea 
+                    class="query-textarea" 
+                    id="queryTextarea" 
+                    placeholder="Ask me anything about your documents..."
+                ></textarea>
+
+                <button class="ask-btn" id="askBtn" onclick="askQuestion()">
+                    Ask Question
+                </button>
+
+                <div class="response-area" id="responseArea" style="display: none;">
+                    <div class="loading-spinner" id="responseSpinner"></div>
+                    <div id="responseText"></div>
+                </div>
+            </div>
+
+            <div style="display: none;" id="noChatSection">
+                <div style="text-align: center; padding: 40px 20px; color: #64748b;">
+                    <div style="font-size: 48px; margin-bottom: 16px;">📚</div>
+                    <h3 style="margin-bottom: 8px; color: #475569;">No Documents Selected</h3>
+                    <p>Please select and load documents from the left panel to start chatting.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedDocs = new Set();
+        let allDocs = [];
+        let loadedDocuments = [];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDocsList();
+            updateChatVisibility();
+        });
+
+        async function loadDocsList() {
+            const container = document.getElementById('docsContainer');
+            
+            try {
+                const response = await fetch('/docs_json');
+                const data = await response.json();
+                
+                if (data.files && data.files.length > 0) {
+                    allDocs = data.files;
+                    renderDocsList(data.files);
+                } else {
+                    container.innerHTML = `
+                        <div style="padding: 20px; text-align: center; color: #64748b;">
+                            <div style="font-size: 24px; margin-bottom: 12px;">📄</div>
+                            <div>No Google Docs found in your account</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading documents:', error);
+                container.innerHTML = `
+                    <div style="padding: 20px; text-align: center; color: #ef4444;">
+                        <div style="font-size: 24px; margin-bottom: 12px;">⚠️</div>
+                        <div>Error loading documents</div>
+                    </div>
+                `;
+            }
+        }
+
+        function renderDocsList(docs) {
+            const container = document.getElementById('docsContainer');
+            container.innerHTML = '';
+
+            docs.forEach(doc => {
+                const docItem = document.createElement('div');
+                docItem.className = 'doc-item';
+                docItem.onclick = () => toggleDocSelection(doc.id);
+                
+                docItem.innerHTML = `
+                    <div class="doc-checkbox" id="checkbox-${doc.id}"></div>
+                    <div class="doc-name" title="${doc.name}">${doc.name}</div>
+                `;
+                
+                container.appendChild(docItem);
+            });
+        }
+
+        function toggleDocSelection(docId) {
+            const checkbox = document.getElementById(`checkbox-${docId}`);
+            const docItem = checkbox.parentElement;
+            
+            if (selectedDocs.has(docId)) {
+                selectedDocs.delete(docId);
+                checkbox.classList.remove('checked');
+                docItem.classList.remove('selected');
+            } else {
+                selectedDocs.add(docId);
+                checkbox.classList.add('checked');
+                docItem.classList.add('selected');
+            }
+            
+            updateSelectedCount();
+        }
+
+        function updateSelectedCount() {
+            const count = selectedDocs.size;
+            const countElement = document.getElementById('selectedCount');
+            const loadBtn = document.getElementById('loadBtn');
+            
+            countElement.textContent = count;
+            loadBtn.disabled = count === 0;
+        }
+
+        async function loadSelectedDocs() {
+            if (selectedDocs.size === 0) return;
+
+            const loadBtn = document.getElementById('loadBtn');
+            const statusDiv = document.getElementById('statusMessage');
+            
+            loadBtn.disabled = true;
+            loadBtn.innerHTML = 'Loading Documents...';
+            
+            showStatus('Loading your selected documents...', 'loading');
+
+            try {
+                const selectedDocIds = Array.from(selectedDocs);
+                const response = await fetch('/load_doc', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ file_ids: selectedDocIds })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Get selected document names
+                    loadedDocuments = allDocs.filter(doc => selectedDocs.has(doc.id));
+                    
+                    showStatus(data.status, 'success');
+                    showLoadedDocs();
+                    updateChatVisibility();
+                } else {
+                    showStatus('Error loading documents. Please try again.', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading documents:', error);
+                showStatus('Error loading documents. Please try again.', 'error');
+            } finally {
+                loadBtn.disabled = false;
+                loadBtn.innerHTML = `Load Selected Documents (<span id="selectedCount">${selectedDocs.size}</span>)`;
+            }
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.className = `status-message ${type}`;
+            statusDiv.textContent = message;
+            statusDiv.style.display = 'block';
+
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusDiv.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        function showLoadedDocs() {
+            const loadedDocsDiv = document.getElementById('loadedDocs');
+            const docsList = document.getElementById('loadedDocsList');
+            
+            docsList.innerHTML = '';
+            loadedDocuments.forEach(doc => {
+                const li = document.createElement('li');
+                li.textContent = doc.name;
+                docsList.appendChild(li);
+            });
+            
+            loadedDocsDiv.style.display = 'block';
+        }
+
+        function updateChatVisibility() {
+            const chatSection = document.getElementById('chatSection');
+            const noChatSection = document.getElementById('noChatSection');
+            
+            if (loadedDocuments.length > 0) {
+                chatSection.style.display = 'block';
+                noChatSection.style.display = 'none';
+            } else {
+                chatSection.style.display = 'none';
+                noChatSection.style.display = 'block';
+            }
+        }
+
+        async function askQuestion() {
+            const textarea = document.getElementById('queryTextarea');
+            const query = textarea.value.trim();
+            
+            if (!query) {
+                alert('Please enter a question.');
+                return;
+            }
+
+            const askBtn = document.getElementById('askBtn');
+            const responseArea = document.getElementById('responseArea');
+            const responseSpinner = document.getElementById('responseSpinner');
+            const responseText = document.getElementById('responseText');
+
+            askBtn.disabled = true;
+            askBtn.textContent = 'Thinking...';
+            
+            responseArea.style.display = 'block';
+            responseSpinner.style.display = 'block';
+            responseText.textContent = '';
+
+            try {
+                const response = await fetch('/ask', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query })
+                });
+
+                const data = await response.json();
+                responseText.textContent = data.answer;
+            } catch (error) {
+                console.error('Error asking question:', error);
+                responseText.textContent = 'Sorry, there was an error processing your question. Please try again.';
+            } finally {
+                askBtn.disabled = false;
+                askBtn.textContent = 'Ask Question';
+                responseSpinner.style.display = 'none';
+            }
+        }
+
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                window.location.href = '/logout';
+            }
+        }
+
+        // Allow Enter key to submit question (with Shift+Enter for new line)
+        document.getElementById('queryTextarea').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                askQuestion();
+            }
+        });
+    </script>
+</body>
+</html>
