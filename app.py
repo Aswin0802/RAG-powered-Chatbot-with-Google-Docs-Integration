@@ -7,13 +7,15 @@ from google.oauth2 import id_token
 from google.auth.transport import requests as grequests
 from dotenv import load_dotenv
 
-# ---------------- LangChain (STABLE IMPORTS) ----------------
+# ---------------- LangChain (STABLE) ----------------
 from langchain_community.vectorstores import FAISS
 from langchain_huggingface import HuggingFaceEndpointEmbeddings
-from langchain_openai import ChatOpenAI
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables import RunnablePassthrough
+from langchain_core.runnables import RunnablePassthrough, RunnableLambda
+
+# ---------------- OpenAI (A4F Native Client) ----------------
+from openai import OpenAI
 
 # ---------------- ENV ----------------
 load_dotenv()
@@ -52,14 +54,21 @@ def build_vectorstore(docs_contents):
         chunks.extend(splitter.split_text(content))
     return FAISS.from_texts(chunks, embedding=embeddings)
 
-
-def build_llm():
-    return ChatOpenAI(
-        model="provider-3/gpt-4o-mini",
-        temperature=0.5,
-        openai_api_key=os.getenv("A4F_API_KEY"),
-        openai_api_base=os.getenv("A4F_BASE_URL")
+# ---------------- LLM (A4F Native) ----------------
+def build_llm_client():
+    return OpenAI(
+        api_key=os.getenv("A4F_API_KEY"),
+        base_url=os.getenv("A4F_BASE_URL")
     )
+
+def llm_invoke(prompt: str) -> str:
+    client = build_llm_client()
+    completion = client.chat.completions.create(
+        model="provider-5/gpt-5-nano",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.5
+    )
+    return completion.choices[0].message.content
 
 # ======================= ROUTES =======================
 
@@ -185,7 +194,7 @@ def load_doc():
         "status": f"Loaded {len(titles)} document(s): {', '.join(titles)}"
     })
 
-# ---------------- RAG CHATBOT (NO CHAINS) ----------------
+# ---------------- RAG CHATBOT ----------------
 
 @app.route("/ask", methods=["POST"])
 def ask():
@@ -195,13 +204,11 @@ def ask():
     if not query:
         return jsonify({"answer": "Please enter a question"}), 400
 
-    llm = build_llm()
-
-    # Fallback if no docs loaded
+    # Fallback: no documents loaded
     if not vectorstore:
-        response = llm.invoke(query)
+        answer = llm_invoke(query)
         return jsonify({
-            "answer": f"📚 General Answer:\n\n{response.content}"
+            "answer": f"📚 General Answer:\n\n{answer}"
         })
 
     retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
@@ -219,19 +226,23 @@ Question:
 """
     )
 
+    llm_runnable = RunnableLambda(
+        lambda x: llm_invoke(x.to_string())
+    )
+
     rag_chain = (
         {
             "context": retriever,
             "question": RunnablePassthrough()
         }
         | prompt
-        | llm
+        | llm_runnable
     )
 
-    response = rag_chain.invoke(query)
+    answer = rag_chain.invoke(query)
 
     return jsonify({
-        "answer": f"📄 Answer based on your documents:\n\n{response.content}"
+        "answer": f"📄 Answer based on your documents:\n\n{answer}"
     })
 
 # ---------------- HEALTH ----------------
@@ -248,7 +259,12 @@ def health():
 if __name__ == "__main__":
     os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
-    required = ["SECRET_KEY", "HUGGINGFACEHUB_API_TOKEN"]
+    required = [
+        "SECRET_KEY",
+        "HUGGINGFACEHUB_API_TOKEN",
+        "A4F_API_KEY",
+        "A4F_BASE_URL"
+    ]
     missing = [v for v in required if not os.getenv(v)]
     if missing:
         raise RuntimeError(f"Missing env vars: {', '.join(missing)}")
