@@ -4,3 +4,4 @@ credentials.json
 # Ignore environment variables
 .env
 
+genv
