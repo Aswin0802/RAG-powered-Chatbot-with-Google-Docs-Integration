@@ -1,7 +1,12 @@
-# Ignore Google credentials
+# ---------------- Secrets ----------------
+.env
 credentials.json
 
-# Ignore environment variables
-.env
+# ---------------- Python ----------------
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
 
-genv
+# ---------------- Virtual Environment ----------------
+genv/
